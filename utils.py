@@ -167,17 +167,17 @@ def train_model(model, train_loader, valid_loader, learning_rate, num_epochs, de
 
 # Save model and training metrics to file.
 # Does not save optimizer state required for further training
-def save_model(name, model, train_metrics, test_metrics):
+def save_model(filename, model, train_metrics, test_metrics):
     state = {
         'model_state_dict': model.state_dict(),
         'train_metrics': train_metrics,
         'test_metrics': test_metrics}
-    torch.save(state, f'{name}.pt')
+    torch.save(state, filename)
 
 
 # Save model and training metrics from file
-def load_model(name, model):
-    state = torch.load(f'{name}.pt')
+def load_model(filename, model):
+    state = torch.load(filename)
     model.load_state_dict(state['model_state_dict'])
     train_metrics = state['train_metrics']
     test_metrics = state['test_metrics']
