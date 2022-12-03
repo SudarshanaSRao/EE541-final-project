@@ -1,9 +1,13 @@
+import time
+import datetime
 import torch
 import torch.nn as nn
 import numpy as np
 import matplotlib.pyplot as plt
 from torch.utils.data import Subset
 from sklearn.model_selection import train_test_split
+from dataclasses import dataclass
+
 
 def split_dataset(dataset, num_samples, train_split, batch_size, seed=0):
     '''
@@ -37,6 +41,63 @@ def split_dataset(dataset, num_samples, train_split, batch_size, seed=0):
     test_loader = torch.utils.data.DataLoader(test_set, batch_size=batch_size, shuffle=False)
 
     return train_loader, test_loader
+
+
+# Container for various training metrics
+@dataclass
+class Metrics:
+    train_loss: list
+    train_accuracy: list
+    test_loss: list
+    test_accuracy: list
+    epoch_times: list
+
+
+def train_model(model, train_loader, valid_loader, learning_rate, num_epochs, device, weight_decay=0, conv=False):
+    # Initialize training parameters
+    loss_func = nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
+
+    # Initialize metrics
+    train_loss_list = []
+    test_loss_list = []
+    train_accuracy_list = []
+    test_accuracy_list = []
+    epoch_times = []
+
+    # Train model
+    for epoch in range(num_epochs):
+        # Start timer
+        start_time = time.time()
+
+        # Train and evaluate model
+        train_loss, train_accuracy = train(train_loader, model, loss_func, optimizer, device, conv)
+        valid_loss, valid_accuracy = test(valid_loader, model, loss_func, device, conv)
+
+        # Store epoch metrics
+        train_loss_list.append(train_loss)
+        train_accuracy_list.append(train_accuracy)
+        test_loss_list.append(valid_loss)
+        test_accuracy_list.append(valid_accuracy)
+
+        # Stop timer and store epoch time
+        duration = time.time() - start_time
+        epoch_times.append(duration)
+
+        # Output progress
+        print('Epoch {} | Loss = {:.4f} | Train Accuracy = {:.2f}% | Test Accuracy = {:.2f}% | Time = {}'
+            .format(epoch + 1, train_loss, train_accuracy, valid_accuracy, datetime.timedelta(seconds=int(duration))))
+
+    # Initialize metrics object
+    metrics = Metrics(
+        train_loss=train_loss_list,
+        train_accuracy=train_accuracy_list,
+        test_loss=test_loss_list,
+        test_accuracy=test_accuracy_list,
+        epoch_times=epoch_times
+    )
+
+    return metrics
 
 
 # Perform single training pass over dataset
@@ -135,43 +196,13 @@ def test(data_loader, model, loss_func, device, conv):
     return total_loss, accuracy
 
 
-def train_model(model, train_loader, valid_loader, learning_rate, num_epochs, device, weight_decay=0, conv=False):
-    # Initialize training parameters
-    loss_func = nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
-
-    # Initialize metrics
-    train_loss_list = []
-    test_loss_list = []
-    train_accuracy_list = []
-    test_accuracy_list = []
-
-    # Train model
-    for epoch in range(num_epochs):
-        # Train and evaluate model
-        train_loss, train_accuracy = train(train_loader, model, loss_func, optimizer, device, conv)
-        valid_loss, valid_accuracy = test(valid_loader, model, loss_func, device, conv)
-
-        # Store epoch metrics
-        train_loss_list.append(train_loss)
-        train_accuracy_list.append(train_accuracy)
-        test_loss_list.append(valid_loss)
-        test_accuracy_list.append(valid_accuracy)
-
-        # Output progress
-        print('Epoch {} | Loss = {:.4f} | Train Accuracy = {:.2f}% | Test Accuracy = {:.2f}%'
-            .format(epoch + 1, train_loss, train_accuracy, valid_accuracy))
-
-    return (train_loss_list, train_accuracy_list), (test_loss_list, test_accuracy_list)
-
-
 # Save model and training metrics to file.
 # Does not save optimizer state required for further training
-def save_model(filename, model, train_metrics, test_metrics):
+def save_model(filename, model, metrics):
     state = {
         'model_state_dict': model.state_dict(),
-        'train_metrics': train_metrics,
-        'test_metrics': test_metrics}
+        'metrics': metrics
+        }
     torch.save(state, filename)
 
 
@@ -179,10 +210,9 @@ def save_model(filename, model, train_metrics, test_metrics):
 def load_model(filename, model):
     state = torch.load(filename)
     model.load_state_dict(state['model_state_dict'])
-    train_metrics = state['train_metrics']
-    test_metrics = state['test_metrics']
+    metrics = state['metrics']
 
-    return train_metrics, test_metrics
+    return metrics
 
 
 # Display live progress bar in console
@@ -216,22 +246,22 @@ class ProgressBar:
 def db(x):
     return 20 * np.log10(x)
 
-def plot_metrics(train_metrics, test_metrics):
+def plot_metrics(metrics):
     # Output final accuracy
-    print('Final Train Accuracy = {:.2f}%'.format(train_metrics[1][-1]))
-    print('Final Test Accuracy  = {:.2f}%'.format(test_metrics[1][-1]))
+    print('Final Train Accuracy = {:.2f}%'.format(metrics.train_accuracy[-1]))
+    print('Final Test Accuracy  = {:.2f}%'.format(metrics.test_accuracy[-1]))
 
     # Initialize multiple plot figure
     fig, ax = plt.subplots(1, 2, figsize=(7, 3))
 
     # Plot loss curves
-    epochs = np.arange(1, len(train_metrics[0]) + 1)
-    ax[0].plot(epochs, db(train_metrics[0]), label='Train set')
-    ax[0].plot(epochs, db(test_metrics[0]), label='Test set')
+    epochs = np.arange(1, len(metrics.train_loss) + 1)
+    ax[0].plot(epochs, db(metrics.train_loss), label='Train set')
+    ax[0].plot(epochs, db(metrics.test_loss), label='Test set')
 
     # Plot accuracy curves
-    ax[1].plot(epochs, train_metrics[1])
-    ax[1].plot(epochs, test_metrics[1])
+    ax[1].plot(epochs, metrics.train_accuracy)
+    ax[1].plot(epochs, metrics.test_accuracy)
 
     # Set plot titles and labels
     ax[0].set_title("Loss Curves")
