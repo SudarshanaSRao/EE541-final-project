@@ -18,6 +18,20 @@ The dataset (training & testing combined) is 1.03 GB. It consists of 87,209 imag
 
 The dataset can be accessed [here](https://www.kaggle.com/datasets/grassknoted/asl-alphabet).
 
-### Getting Started
+
+
+## Getting Started
+
+### Running a model
 
 1. Run the *init.ipynb* script to download the Kaggle dataset. A username and token is required and can be generated from your user profile on Kaggle.
+2. Run any of the *model_{name}.ipynb* scripts in the root directory to load, train and evaluate that model. All these scripts have the same structure with the model hyperparameters declared as constants at the top of the scripts. Each script corresponds to a different model.
+
+### Structure
+
+Only the model and initialization scripts are directly in the root directory. All other methods and classes required by the model scripts are stores in the *utils* package. The *utils* package contains the following modules:
+
+- *data.py* - Methods for manipulating, saving and visualizing the dataset.
+- *eval.py* - Methods for evaluating a model and visualizing the evaluation metrics.
+- *models.py* - Model class definitions. 
+- *train.py* - Methods for training a model on a given dataset.

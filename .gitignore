@@ -1,4 +1,11 @@
 asl-alphabet/
 __pycache__/
+*/__pycache__/
 ignore/
 models/
+results/
+gomathy-data/
+gomathy-data-resized/
+nick-data/
+nick-data-resized/
+old_models/
