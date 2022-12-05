@@ -28,9 +28,9 @@ class ProgressBar:
         output = '{}: |{}| {:.1f}%'.format(self.prefix, bar, percent * 100)
         print(output, end='\r')
 
-        # Print new line upon completion
+        # Clear line
         if self.steps == self.total_steps:
-            print()
+            print(' ' * len(output), end='\r')
 
 
 # Container for various training metrics
@@ -61,8 +61,9 @@ def train_model(model, train_loader, valid_loader, learning_rate, num_epochs, de
         start_time = time.time()
 
         # Train and evaluate model
-        train_loss, train_accuracy = train(train_loader, model, loss_func, optimizer, device, conv)
-        valid_loss, valid_accuracy = test(valid_loader, model, loss_func, device, conv)
+        train(train_loader, model, loss_func, optimizer, device, conv)
+        train_loss, train_accuracy = test(train_loader, model, loss_func, device, conv, '[2/3] Training Set Evaluation')
+        valid_loss, valid_accuracy = test(valid_loader, model, loss_func, device, conv, '[3/3] Validation Set Evaluation')
 
         # Store epoch metrics
         train_loss_list.append(train_loss)
@@ -75,8 +76,9 @@ def train_model(model, train_loader, valid_loader, learning_rate, num_epochs, de
         epoch_time_list.append(duration)
 
         # Output progress
-        print('Epoch {} | Loss = {:.4f} | Train Accuracy = {:.2f}% | Test Accuracy = {:.2f}% | Time = {}'
-            .format(epoch + 1, train_loss, train_accuracy, valid_accuracy, datetime.timedelta(seconds=int(duration))))
+        print('Epoch {} | Loss = {:.4f} | Train Accuracy = {:.2f}% | Valid Accuracy = {:.2f}% | Time = {}'
+            .format(epoch + 1, train_loss, train_accuracy, valid_accuracy, datetime.timedelta(seconds=int(duration))), end='\r')
+        print()
 
     # Initialize metrics object
     metrics = Metrics(
@@ -94,16 +96,12 @@ def train_model(model, train_loader, valid_loader, learning_rate, num_epochs, de
 def train(data_loader, model, loss_func, optimizer, device, conv):
     # Initialize parameters
     num_inputs = np.array(data_loader.dataset[0][0].numpy().shape).prod()
-    size = len(data_loader.dataset)
-    num_batches = len(data_loader)
-    total_loss = 0
-    correct = 0
 
     # Set mode to training
     model.train()
 
     # Initialize progress bar
-    progress = ProgressBar('Train Progress', len(data_loader))
+    progress = ProgressBar('[1/3] Training Step', len(data_loader))
 
     # Iterate through batches
     for images, labels in data_loader: 
@@ -123,26 +121,12 @@ def train(data_loader, model, loss_func, optimizer, device, conv):
         # Optimization
         optimizer.step()
 
-        # Transfer outputs and labels to CPU
-        outputs, labels = outputs.cpu(), labels.cpu()
-        
-        # Compute batch metrics
-        total_loss += loss.item()
-        pred = torch.max(outputs, 1)[1]
-        correct += (pred == labels).sum().numpy()
-
         # Update progress
         progress.step()
 
-    # Compute metrics for dataset
-    total_loss /= num_batches
-    accuracy = (correct / size) * 100
-
-    return total_loss, accuracy
-
 
 # Perform single test pass over dataset
-def test(data_loader, model, loss_func, device, conv):
+def test(data_loader, model, loss_func, device, conv, name):
     # Initialize parameters
     num_inputs = np.array(data_loader.dataset[0][0].numpy().shape).prod()
     size = len(data_loader.dataset)
@@ -154,7 +138,7 @@ def test(data_loader, model, loss_func, device, conv):
     model.eval()
 
     # Initialize progress bar
-    progress = ProgressBar('Valid Progress', len(data_loader))
+    progress = ProgressBar(name, len(data_loader))
 
     # Iterate through batches
     with torch.no_grad():

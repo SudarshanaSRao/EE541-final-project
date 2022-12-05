@@ -4,8 +4,8 @@ __pycache__/
 ignore/
 models/
 results/
-gomathy-data/
-gomathy-data-resized/
-nick-data/
-nick-data-resized/
-old_models/
+supp-data1/
+supp-data2/
+mixed/
+data.ipynb
+images/

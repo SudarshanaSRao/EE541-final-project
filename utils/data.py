@@ -28,23 +28,30 @@ def split_dataset(dataset, num_samples, dataset_split, batch_size, seed=0):
     valid_size = int(round(num_samples * dataset_split[1]))
     test_size = int(round(num_samples * dataset_split[2]))
     dataset_inds = list(range(len(dataset)))
-    train_valid_inds, test_inds = train_test_split(dataset_inds, train_size=train_size + valid_size, 
-            test_size=test_size, random_state=seed, stratify=dataset.targets)
-    train_inds, valid_inds = train_test_split(train_valid_inds, train_size=train_size, 
-            test_size=valid_size, random_state=seed, stratify=operator.itemgetter(*train_valid_inds)(dataset.targets))
+    train_inds, valid_test_inds = train_test_split(dataset_inds, train_size=train_size, 
+            test_size=test_size + valid_size, random_state=seed, stratify=dataset.targets)
+    
+    if dataset_split[2] > 0:
+        valid_inds, test_inds = train_test_split(valid_test_inds, train_size=valid_size, 
+                test_size=test_size, random_state=seed, stratify=operator.itemgetter(*valid_test_inds)(dataset.targets))
+    else:
+        valid_inds = valid_test_inds
 
     # Create training and test subsets
     train_set = Subset(dataset, train_inds)
     valid_set = Subset(dataset, valid_inds)
-    test_set = Subset(dataset, test_inds)
+    if dataset_split[2] > 0:
+        test_set = Subset(dataset, test_inds)
 
     # Initialize data loader
     train_loader = torch.utils.data.DataLoader(train_set, batch_size=batch_size, shuffle=True)
     valid_loader = torch.utils.data.DataLoader(valid_set, batch_size=batch_size, shuffle=False)
-    test_loader = torch.utils.data.DataLoader(test_set, batch_size=batch_size, shuffle=False)
-
-    return train_loader, valid_loader, test_loader
-
+    if dataset_split[2] > 0:
+        test_loader = torch.utils.data.DataLoader(test_set, batch_size=batch_size, shuffle=False)
+        return train_loader, valid_loader, test_loader
+    else:
+        return train_loader, valid_loader
+        
 
 # Save model and training metrics to file.
 # Does not save optimizer state required for further training

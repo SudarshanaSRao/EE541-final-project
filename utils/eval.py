@@ -17,7 +17,7 @@ def db(x):
 def plot_metrics(metrics):
     # Output final accuracy
     print('Final Train Accuracy = {:.2f}%'.format(metrics.train_accuracy[-1]))
-    print('Final Test Accuracy  = {:.2f}%'.format(metrics.test_accuracy[-1]))
+    print('Final Valid Accuracy  = {:.2f}%'.format(metrics.test_accuracy[-1]))
     print('Average Epoch Time   = {:.2f}s'.format(np.mean(metrics.epoch_time)))
 
     # Initialize multiple plot figure
@@ -26,7 +26,7 @@ def plot_metrics(metrics):
     # Plot loss curves
     epochs = np.arange(1, len(metrics.train_loss) + 1)
     ax[0].plot(epochs, db(metrics.train_loss), label='Train set')
-    ax[0].plot(epochs, db(metrics.test_loss), label='Test set')
+    ax[0].plot(epochs, db(metrics.test_loss), label='Valid set')
 
     # Plot accuracy curves
     ax[1].plot(epochs, metrics.train_accuracy)
@@ -41,7 +41,7 @@ def plot_metrics(metrics):
     ax[1].set_ylabel("Accuracy (%)")
 
     # Setup parent figure
-    fig.suptitle('Training Results', y=1.04)
+    # fig.suptitle('Training Results', y=1.04)
     fig.subplots_adjust(hspace=1.5, wspace=0.4)
     fig.legend(bbox_to_anchor=(0.66, -0.2), loc='lower right', ncol=4)
     plt.show()
@@ -81,8 +81,8 @@ def eval_model(model, test_loader, device, conv=False):
             preds = torch.max(outputs, 1)[1]
             for i in range(len(images)):
                 conf_m[labels[i]][preds[i]] += 1
-                labels_list += list(labels.numpy())
-                preds_list += list(preds.numpy())
+                labels_list += list(labels.numpy().copy())
+                preds_list += list(preds.numpy().copy())
                 
 
     # Normalize confusion matrix by true class
@@ -113,11 +113,11 @@ def eval_model(model, test_loader, device, conv=False):
     print('Precision = {:.4f}'.format(precision))
     print('Recall = {:.4f}'.format(recall))
     print('F1 = {:.4f}'.format(f1))
-    print('Accuracy = {:.4f}'.format(accuracy))
+    print('Accuracy = {:.2f}%'.format(accuracy * 100))
 
     # Plot heatmap
     heatmap = sns.heatmap(conf_m, linewidth=0.4, cmap='viridis')  
-    plt.title('Model Confusion Matrix Heat Map')
+    # plt.title('Model Confusion Matrix Heat Map')
     plt.xlabel('Predicted Class')
     plt.ylabel('True Class')
     plt.show()
