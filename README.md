@@ -2,6 +2,8 @@
 
 Final Deep Learning Project for USC EE-541 (A Computational Introduction to Deep Learning)
 
+<span align='center'>✨Received extra credit for this project✨</span>
+
 ## Overview
 
 ### Background
