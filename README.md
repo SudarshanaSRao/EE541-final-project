@@ -1,6 +1,6 @@
 # Deep Learning based American Sign Language Recognition
 
-Final Deep Learning Project for USC EE-541 (A Computational Introduction to Deep Learning) _**✨Received extra credit for this project✨**_
+Final Deep Learning Project for USC EE-541 (A Computational Introduction to Deep Learning) _**✨Received extra credit for this project🚀**_
 
 ## Overview
 
